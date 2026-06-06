@@ -7,7 +7,7 @@
 * of the two characters (a warrior or a hunter). The character has three different fields (health, fame, and money).       *
 * The player must keep all of these fields above 0 in order to survive.                                                    *
 * Having 0 fame is just social media death, but that still matters in this game.                                           *
-* Character’s stats will each be measured by an integer. EACH "DAY" the player plays will DECREASE EVERY STAT by 3 points. *
+* Character s stats will each be measured by an integer. EACH "DAY" the player plays will DECREASE EVERY STAT by 3 points. *
 * The player can INCREASE one of these STATS EACH DAY by selecting ONE of three options:                                   *
 * hunt for food;                                                                                                           *
 * fight monsters;                                                                                                          *
@@ -27,7 +27,10 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_native_dialog.h>
-#include <windows.h>
+
+// Cross-platform modern C++ replacements for sleep functionality
+#include <thread>
+#include <chrono>
 
 #define WHITE al_map_rgb (255,255,255)
 #define windowName "Fantasy Game"
@@ -52,7 +55,8 @@ int main() {
     int maxDaysAlive = 0;
     int fameAboveTenCount = 0;
 
-    system("CLS");
+    // Cross-platform command to clear the screen and home the cursor
+    cout << "\033[2J\033[1;1H";
 
     // Initializing Allegro (until "Enter" key is pressed)
     initializeAllegro(width, height, windowName);
@@ -163,7 +167,8 @@ int main() {
             }
         }
 
-        Sleep(5000);
+        // Cross-platform sleep variant (5000 milliseconds = 5 seconds)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 
         // Turning on game-over sound effects
         musicOn("gameOver.wav");

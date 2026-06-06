@@ -8,7 +8,6 @@
 #include <bits/stdc++.h>
 #include <stdlib.h>
 #include <cstdlib>
-#include <windows.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
@@ -16,6 +15,10 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_native_dialog.h>
 #include <ctime>
+
+// Cross-platform modern C++ replacements for sleep functionality
+#include <thread>
+#include <chrono>
 
 #define WHITE al_map_rgb (255, 255, 255)
 #define BLACK al_map_rgb (0, 0, 0)
@@ -91,24 +94,24 @@ void Person::Menu() {
     toString();
 
     cout << "What would you like to do?" << endl << endl;
-    cout << "   1.  Hunt for food" << endl;
-    cout << "   2.  Fight monsters" << endl;
-    cout << "   3.  Search for treasure" << endl;
+    cout << "    1.  Hunt for food" << endl;
+    cout << "    2.  Fight monsters" << endl;
+    cout << "    3.  Search for treasure" << endl;
 
     if(name == "Warrior") {
         // Our warrior has an access to modern medicine and tons of money, and so can allow to buy and use a kit
-        cout << "   4.  Utilize a first-aid medical kit in the hospital" << endl << endl;
+        cout << "    4.  Utilize a first-aid medical kit in the hospital" << endl << endl;
     }
     else if(name == "Hunter") {
         // Our hunter has more health, so he has an ability to perform a battle and gain some money as an actor
-        cout << "   4.  Save poor Italian civilians from a lion in the middle of Colosseum" << endl << endl;
+        cout << "    4.  Save poor Italian civilians from a lion in the middle of Colosseum" << endl << endl;
     }
 
     cout << "Please type up your answer here: ";
     cin >> wants;
 
-    // Updating the screen for the sake of the user
-    system("CLS");
+    // Updating the screen using cross-platform ANSI escape sequence
+    cout << "\033[2J\033[1;1H";
 
     // Our sort of an even queue of sorts/processing the input of the user
     if(wants == 1) {
@@ -128,7 +131,7 @@ void Person::Menu() {
             gladiatorFight();
         }
         else {
-            system("CLS");
+            cout << "\033[2J\033[1;1H";
 
             cout << "Error Occured!";
 
@@ -137,7 +140,7 @@ void Person::Menu() {
     }
     else {
         // Wiping out the screen
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
 
         cout << "No such deed exists! Please restart the game!" << endl;
 
@@ -353,17 +356,17 @@ bool wantsToPlay() {
 
     // Checking whether the wish to play again (lower-cased) starts with "y" or "n"
     if(answer.rfind("y", 0) == 0) {
-        // Cleaning up the screen every time the game starts
-        system ("CLS");
+        // Cleaning up the screen using cross-platform variant
+        cout << "\033[2J\033[1;1H";
 
         return true;
     }
     else if(answer.rfind("n", 0) == 0) {
-        // Cleaning up the screen every time the game starts
-        system ("CLS");
+        // Cleaning up the screen using cross-platform variant
+        cout << "\033[2J\033[1;1H";
     }
     else {
-        system ("CLS");
+        cout << "\033[2J\033[1;1H";
 
         cout << "Error! Invalid input!";
 
@@ -381,18 +384,18 @@ int choiceOption() {
     cout << "Welcome to the Fantasy Character Game! You can play as one of two characters." << endl;
     cout << "You will need to manage your health, fame, and money in order to survive!" << endl;
 
-    Sleep(10000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
     // Wiping the screen off
-    system("CLS");
+    cout << "\033[2J\033[1;1H";
 
     cout << "IMPORTANT NOTE: PLEASE TURN YOUR VOLUME ON!" << endl << endl;
     cout << "For you, my dear user, to experience this game in the best way possible, it is highly recommended to type up Winmm in:" << endl << "Code::Blocks -> Settings -> Compiler -> Linker Settings -> Link Libraries -> Add -> Ok" << endl << endl;
 
-    Sleep(10000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
     // Wiping the screen off
-    system("CLS");
+    cout << "\033[2J\033[1;1H";
 
     // Allowing the user to choose between models
     cout << "Who would you like to play as?" << endl << endl;
@@ -404,30 +407,30 @@ int choiceOption() {
 
     if(desire == 1) {
         // Wiping the screen off
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
 
         cout << "You have selected Warrior!" << endl << endl;
 
         // Pausing for three seconds for better user experience
-        Sleep(3000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         // Wiping the screen off
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
     }
     else if(desire == 2) {
         // Wiping the screen off
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
 
         cout << "You have selected Hunter!" << endl << endl;
 
         // Pausing for three seconds for better user experience
-        Sleep(3000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         // Wiping the screen off
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
     }
     else {
-        system("CLS");
+        cout << "\033[2J\033[1;1H";
 
         cout << "You crashed the system! Please restart the game!" << endl;
     }
@@ -442,13 +445,18 @@ void musicOnRepeat(const string& soundFile) {
     // Prototype
     bool fileExists(const string&);
 
-    // SND_LOOP to play repeatedly
+    // Safely execute Windows API audio logic strictly on Windows deployment
+    #ifdef _WIN32
     if(fileExists(soundFile)) {
         PlaySoundA(soundFile.c_str(), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
     }
     else {
         cout << "Error: File '" << soundFile << "' not found." << endl;
     }
+    #else
+    // Sound playback stub for non-windows builds so CI/CD does not choke on missing symbols
+    (void)soundFile; 
+    #endif
 }
 
 // Function to play music once
@@ -456,13 +464,18 @@ void musicOn(const string& soundFile) {
     // Prototype
     bool fileExists(const string&);
 
-    // SND_LOOP to play repeatedly
+    // Safely execute Windows API audio logic strictly on Windows deployment
+    #ifdef _WIN32
     if(fileExists(soundFile)) {
         PlaySoundA(soundFile.c_str(), NULL, SND_FILENAME | SND_ASYNC);
     }
     else {
         cout << "Error: File '" << soundFile << "' not found." << endl;
     }
+    #else
+    // Sound playback stub for non-windows builds so CI/CD does not choke on missing symbols
+    (void)soundFile;
+    #endif
 }
 
 // Function to check if a file exists
@@ -488,8 +501,7 @@ int initializeAllegro(int width, int height, string title) {
     // Declaring character array (+1 for null terminator)
     char* nameOfWindow = new char[length + 20];
 
-    // Copying the contents of the
-    // String to char array
+    // Copying the contents of the String to char array
     strcpy(nameOfWindow, title.c_str());
 
     //Initialize Allegro
@@ -500,21 +512,22 @@ int initializeAllegro(int width, int height, string title) {
 
     if (!display) {
         al_show_native_message_box(display, "Error", "Error", "Failed to initialize display!", nullptr, ALLEGRO_MESSAGEBOX_ERROR);
-
+        delete[] nameOfWindow;
         return -1;
     }
 
     // Initialize the title
     al_set_window_title(display, nameOfWindow);
+    delete[] nameOfWindow;
 
     //Initialize keyboard routines
-	if(!al_install_keyboard()) {
-	    al_show_native_message_box(display, "Error", "Error", "failed to initialize the keyboard!", nullptr, ALLEGRO_MESSAGEBOX_ERROR);
-     	return -1;
-   	}
+    if(!al_install_keyboard()) {
+        al_show_native_message_box(display, "Error", "Error", "failed to initialize the keyboard!", nullptr, ALLEGRO_MESSAGEBOX_ERROR);
+        return -1;
+    }
 
-   	// Initialize addons
-   	if(!al_init_primitives_addon()) {
+    // Initialize addons
+    if(!al_init_primitives_addon()) {
         cerr << "Failed to initialize primitives addon." << endl;
         return 0;
     }
@@ -532,7 +545,6 @@ int initializeAllegro(int width, int height, string title) {
     al_register_event_source(event_queue, al_get_keyboard_event_source());
 
     // Addons
-    al_init_primitives_addon();
     al_init_font_addon();
     al_init_ttf_addon();
     al_init_image_addon();
@@ -666,7 +678,9 @@ int initializeAllegro(int width, int height, string title) {
     al_destroy_display(display);
 
     // Music off after the display is closed
+    #ifdef _WIN32
     PlaySoundA(NULL, NULL, 0);
+    #endif
 
     return 0;
 }
@@ -868,7 +882,7 @@ int drawHunterImages() {
     int hunterGladiatorHeight = al_get_bitmap_height(hunterGladiator);
 
     // Error handling
-    if(!warriorGladiator) {
+    if(!hunterGladiator) {
         cout << "No fighting with Tiger hunter!" << endl;
 
         return -1;
@@ -918,5 +932,3 @@ int drawHunterText() {
 
     return 0;
 }
-
-// Finally
