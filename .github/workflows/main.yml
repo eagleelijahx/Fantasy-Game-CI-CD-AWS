@@ -1,4 +1,4 @@
-name: C++ CI with Allegro 5
+name: C++ CI/CD with Allegro 5 (Windows Native Build)
 
 on:
   push:
@@ -8,20 +8,26 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Dependencies and Allegro 5
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake liballegro5-dev
+    - name: Set up MSYS2 (Compiler & Allegro)
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-allegro5
 
-    - name: Compile Game (All CPP Files with Addons)
+    - name: Compile Game for Windows
+      shell: msys2 {0}
       run: |
-        g++ -std=c++17 *.cpp -o FantasyGame \
+        g++ -std=c++17 *.cpp -o FantasyGame.exe \
           -lallegro \
           -lallegro_main \
           -lallegro_image \
@@ -31,3 +37,14 @@ jobs:
           -lallegro_ttf \
           -lallegro_primitives \
           -lallegro_dialog
+
+    - name: Upload Windows Game Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: FantasyGame-Windows-Build
+        path: |
+          FantasyGame.exe
+          allegro_monolith-5.2.dll
+          *.ttf
+          *.png
+          *.wav
