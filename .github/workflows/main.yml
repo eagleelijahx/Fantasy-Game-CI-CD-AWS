@@ -19,6 +19,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake liballegro5-dev
 
-    - name: Compile Game (All CPP Files)
+    - name: Compile Game (All CPP Files with Addons)
       run: |
-        g++ -std=c++17 *.cpp -o FantasyGame -lallegro -lallegro_main -lallegro_image -lallegro_audio -lallegro_acodec
+        g++ -std=c++17 *.cpp -o FantasyGame \
+          -lallegro \
+          -lallegro_main \
+          -lallegro_image \
+          -lallegro_audio \
+          -lallegro_acodec \
+          -lallegro_font \
+          -lallegro_ttf \
+          -lallegro_primitives \
+          -lallegro_dialog
