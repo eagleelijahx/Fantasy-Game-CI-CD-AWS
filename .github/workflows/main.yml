@@ -17,16 +17,16 @@ jobs:
     - name: Download & Extract Windows Allegro 5 Development Files
       shell: powershell
       run: |
-        # Using the built-in Windows PowerShell to pull down the development kit safely
         Invoke-WebRequest -Uri "https://github.com/liballeg/allegro5/releases/download/5.2.8.0/allegro-x86_64-w64-mingw32-gcc-12.1.0-posix-seh-static-5.2.8.0.zip" -OutFile "allegro.zip"
         Expand-Archive -Path "allegro.zip" -DestinationPath "allegro_win"
 
     - name: Compile Game for Windows (.exe)
       shell: cmd
       run: |
-        # We manually add the pre-installed MinGW path to our environment just in case, then compile
         set PATH=C:\msys64\mingw64\bin;%PATH%
         g++ -std=c++17 *.cpp -o FantasyGame.exe ^
+          -include windows.h ^
+          -include mmsystem.h ^
           -I.\allegro_win\allegro\include ^
           -L.\allegro_win\allegro\lib ^
           -lallegro-monolith.dll ^
