@@ -8,17 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Switches the machine to Windows
+    runs-on: windows-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Installs Allegro 5 cleanly for Windows using vcpkg
     - name: Install Allegro 5 via vcpkg
       run: |
         vcpkg install allegro5:x64-windows
 
-    # Compiles natively on Windows using Microsoft's C++ Compiler (MSVC)
     - name: Compile Game for Windows (.exe)
       run: |
         cl.exe /std:c++17 *.cpp /Fe:FantasyGame.exe `
@@ -28,9 +26,9 @@ jobs:
           allegro_audio.lib allegro_acodec.lib allegro_font.lib `
           allegro_ttf.lib allegro_primitives.lib allegro_dialog.lib
 
-    # --- Simple CD Component ---
+    # --- Simple CD Component (Fixed Action Name) ---
     - name: Upload Windows Build Artifact
-      uses: actions/unlock-artifact@v4
+      uses: actions/upload-artifact@v4
       with:
         name: FantasyGame-Windows-Build
         path: |
