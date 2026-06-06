@@ -21,14 +21,17 @@ jobs:
 
     - name: Download & Extract Windows Allegro 5 Libraries
       run: |
-        # This downloads the official pre-compiled Allegro 5 binaries for Windows MinGW
+        # Download the official pre-compiled Allegro 5 binaries for Windows MinGW
         wget https://github.com/liballeg/allegro5/releases/download/5.2.8.0/allegro-x86_64-w64-mingw32-gcc-12.1.0-posix-seh-static-5.2.8.0.zip -O allegro.zip
         unzip allegro.zip -d allegro_win/
 
     - name: Compile Game to Windows .exe
       run: |
-        # Added -lwinmm at the end so the compiler understands native Windows PlaySoundA audio functions
+        # We use '-include windows.h' and '-include mmsystem.h' to force-inject the Windows audio definitions 
+        # We also keep '-lwinmm' at the end to properly link the library
         x86_64-w64-mingw32-g++ -std=c++17 *.cpp -o FantasyGame.exe \
+          -include windows.h \
+          -include mmsystem.h \
           -I./allegro_win/allegro/include \
           -L./allegro_win/allegro/lib \
           -lallegro-monolith.dll \
