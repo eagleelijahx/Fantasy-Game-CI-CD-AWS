@@ -37,7 +37,7 @@ jobs:
     - name: Setup MSVC Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
-    # --- 4. Compile + Safe Header Injection + Create ZIP Bundle ---
+   # --- 4. Compile + Safe Header Injection + Create ZIP Bundle ---
     - name: Compile Game and Bundle Assets
       run: |
         # Create a fake bits folder to trick MSVC into finding stdc++.h
@@ -58,8 +58,8 @@ jobs:
         echo "#include <windows.h>" >> bits\stdc++.h
         echo "#include <mmsystem.h>" >> bits\stdc++.h
         
-        # Compile using single-line syntax (Added Winmm.lib at the end to support PlaySoundA)
-        cl.exe /std:c++17 *.cpp /Fe:FantasyGame.exe /I. /I"C:\vcpkg\installed\x64-windows\include" /link /LIBPATH:"C:\vcpkg\installed\x64-windows\lib" allegro.lib allegro_main.lib allegro_image.lib allegro_audio.lib allegro_acodec.lib allegro_font.lib allegro_ttf.lib allegro_primitives-static.lib allegro_dialog-static.lib Winmm.lib
+        # Compile using single-line syntax (ADDED /D_HAS_STD_BYTE=0 and /DNOMINMAX to clear macro collisions)
+        cl.exe /std:c++17 /D_HAS_STD_BYTE=0 /DNOMINMAX *.cpp /Fe:FantasyGame.exe /I. /I"C:\vcpkg\installed\x64-windows\include" /link /LIBPATH:"C:\vcpkg\installed\x64-windows\lib" allegro.lib allegro_main.lib allegro_image.lib allegro_audio.lib allegro_acodec.lib allegro_font.lib allegro_ttf.lib allegro_primitives-static.lib allegro_dialog-static.lib Winmm.lib
         
         # Create a clean deployment folder, gather the files, and compress them into a ZIP
         mkdir dist -ErrorAction SilentlyContinue
