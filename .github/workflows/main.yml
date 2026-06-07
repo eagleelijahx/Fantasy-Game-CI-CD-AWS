@@ -1,4 +1,5 @@
 name: C++ CI & CD with Allegro 5
+
 on:
   push:
     branches: [ "main" ]
@@ -10,6 +11,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -50,10 +52,15 @@ jobs:
         echo "#include <memory>" >> bits\stdc++.h
         echo "#include <map>" >> bits\stdc++.h
         echo "#include <set>" >> bits\stdc++.h
-
-        # Compile using single-line syntax to avoid line-continuation layout bugs
-        cl.exe /std:c++17 *.cpp /Fe:FantasyGame.exe /I. /I"C:\vcpkg\installed\x64-windows\include" /link /LIBPATH:"C:\vcpkg\installed\x64-windows\lib" allegro.lib allegro_main.lib allegro_image.lib allegro_audio.lib allegro_acodec.lib allegro_font.lib allegro_ttf.lib allegro_primitives-static.lib allegro_dialog-static.lib
-
+        
+        # FIXES: Injecting the missing file stream and Windows multimedia headers
+        echo "#include <fstream>" >> bits\stdc++.h
+        echo "#include <windows.h>" >> bits\stdc++.h
+        echo "#include <mmsystem.h>" >> bits\stdc++.h
+        
+        # Compile using single-line syntax (Added Winmm.lib at the end to support PlaySoundA)
+        cl.exe /std:c++17 *.cpp /Fe:FantasyGame.exe /I. /I"C:\vcpkg\installed\x64-windows\include" /link /LIBPATH:"C:\vcpkg\installed\x64-windows\lib" allegro.lib allegro_main.lib allegro_image.lib allegro_audio.lib allegro_acodec.lib allegro_font.lib allegro_ttf.lib allegro_primitives-static.lib allegro_dialog-static.lib Winmm.lib
+        
         # Create a clean deployment folder, gather the files, and compress them into a ZIP
         mkdir dist -ErrorAction SilentlyContinue
         copy FantasyGame.exe dist\
