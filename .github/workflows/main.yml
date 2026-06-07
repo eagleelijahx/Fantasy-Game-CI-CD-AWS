@@ -113,3 +113,19 @@ jobs:
         draft: false
         prerelease: false
         files: FantasyGame-Windows-Build.zip
+
+    # --- 9. Append CloudFront Link to Release Body ---
+    - name: Append CloudFront Link to Release
+      if: github.ref == 'refs/heads/main'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: v1.0.${{ github.run_number }}
+        DOWNLOAD_URL: https://dcbc64a200c5t.cloudfront.net/FantasyGame-v1.0.${{ github.run_number }}.zip
+      run: |
+        gh release edit "$RELEASE_TAG" --append-body \
+        -n "
+        
+        ---
+        ### 📥 Download via CloudFront (Global CDN)
+        [Download Version $RELEASE_TAG here]($DOWNLOAD_URL)"
+
