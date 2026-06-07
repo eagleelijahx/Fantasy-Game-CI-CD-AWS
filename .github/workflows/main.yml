@@ -40,7 +40,9 @@ jobs:
       run: |
         # Create a fake bits folder to trick MSVC into finding stdc++.h
         mkdir bits -ErrorAction SilentlyContinue
-        @'
+        
+        # Inject the proxy headers safely using a simple PowerShell string block
+        $headers = @'
         #include <iostream>
         #include <vector>
         #include <string>
@@ -53,7 +55,8 @@ jobs:
         #include <stack>
         #include <fstream>
         #include <sstream>
-'@ | Out-File -FilePath bits\stdc++.h -Encoding utf8
+        '@
+        $headers | Out-File -FilePath bits\stdc++.h -Encoding utf8
 
         # Compile with /EHsc exception support and look inside current directory (.) for headers
         cl.exe /std:c++17 /MT /EHsc *.cpp /Fe:FantasyGame.exe `
