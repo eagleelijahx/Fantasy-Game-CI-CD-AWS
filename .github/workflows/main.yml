@@ -114,23 +114,23 @@ jobs:
         prerelease: false
         files: FantasyGame-Windows-Build.zip
 
-    # --- 9. Append CloudFront Link to Release Body ---
+     # --- 9. Append CloudFront Link to Release Body ---
     - name: Append CloudFront Link to Release
       if: github.ref == 'refs/heads/main'
+      shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         RELEASE_TAG: v1.0.${{ github.run_number }}
         DOWNLOAD_URL: https://dcbc64a200c5t.cloudfront.net/FantasyGame-v1.0.${{ github.run_number }}.zip
       run: |
         # 1. Fetch the current body of the release and save it to a file
-        gh release view "$RELEASE_TAG" --json body --jq .body > current_body.txt
+        gh release view "$env:RELEASE_TAG" --json body --jq .body | Out-File -FilePath current_body.txt -Encoding utf8
         
-        # 2. Append the new link to the file
-        echo -e "\n\n---\n### 📥 Download via CloudFront (Global CDN)\n[Download Version $RELEASE_TAG here]($DOWNLOAD_URL)" >> current_body.txt
+        # 2. Append the new link to the file using PowerShell
+        Add-Content -Path current_body.txt -Value "`n`n---`n### 📥 Download via CloudFront (Global CDN)`n[Download Version $env:RELEASE_TAG here]($env:DOWNLOAD_URL)"
         
         # 3. Update the release using the file as the new body
-        gh release edit "$RELEASE_TAG" --body-file current_body.txt
+        gh release edit "$env:RELEASE_TAG" --body-file current_body.txt
 
 
-    
     
