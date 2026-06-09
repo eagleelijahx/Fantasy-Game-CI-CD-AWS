@@ -1,44 +1,134 @@
-name: Fast Linux-to-Windows Cross-Compile
+name: C++ CI & CD with Allegro 5
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Silences Node 20 deprecation warnings and forces the runner to use Node 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  build-windows-on-linux:
-    runs-on: ubuntu-latest  # Light, fast Linux runner
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Toolchain and Allegro 5 Cross-Compilers
+    # --- 1. Caching Step (Speeds up subsequent runs) ---
+    - name: Restore vcpkg artifacts from cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          C:/vcpkg/downloads
+          C:/vcpkg/installed
+          ~/.vpkg
+        key: ${{ runner.os }}-vcpkg-dynamic-${{ hashFiles('**/vcpkg.json') }}
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-dynamic-
+    
+    # --- 2. Install Allegro 5 (Dynamic configuration) ---
+    - name: Install Allegro 5 via vcpkg
       run: |
-        sudo apt-get update
-        # Installs the MinGW (GCC for Windows) cross-compiler
-        sudo apt-get install -y mingw-w64 
-        
-        # Download or install pre-compiled MinGW Allegro 5 binaries here if needed
-        # (Often managed via a lib folder in your repo or downloaded via wget)
+        vcpkg install allegro5:x64-windows
+   
+    # --- 3. Setup MSVC Compiler Path ---
+    - name: Setup MSVC Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Compile Windows EXE using Linux GCC
+    # --- 4. Compile + Safe Header Injection + Asset Bundling + Create ZIP Bundle ---
+    - name: Compile Game and Bundle Assets
       run: |
-        # 1. Linux GCC naturally understands <bits/stdc++.h>
-        # 2. MinGW provides the Windows headers (<windows.h>, <mmsystem.h>)
-        # 3. Target x86_64-w64-mingw32-g++ compiles directly to a Windows .exe
+        # Create a fake bits folder to trick MSVC into finding stdc++.h
+        mkdir bits -ErrorAction SilentlyContinue
         
-        x86_64-w64-mingw32-g++ -std=c++17 *.cpp -o FantasyGame.exe \
-          -I./include \
-          -L./lib \
-          -lallegro-5.0.10-monolith-mt \
-          -lwinmm -lgdi32 -lcomdlg32 -lole32
+        # Clean, simple echoing to build the proxy header file safely without parsing bugs
+        echo "#include <iostream>" > bits\stdc++.h
+        echo "#include <vector>" >> bits\stdc++.h
+        echo "#include <string>" >> bits\stdc++.h
+        echo "#include <algorithm>" >> bits\stdc++.h
+        echo "#include <cmath>" >> bits\stdc++.h
+        echo "#include <memory>" >> bits\stdc++.h
+        echo "#include <map>" >> bits\stdc++.h
+        echo "#include <set>" >> bits\stdc++.h
+        
+        # FIXES: Injecting the missing file stream and Windows multimedia headers
+        echo "#include <fstream>" >> bits\stdc++.h
+        echo "#include <windows.h>" >> bits\stdc++.h
+        echo "#include <mmsystem.h>" >> bits\stdc++.h
+        
+        # Compile using single-line syntax (Fixed static library names to match dynamic vcpkg layout)
+        # Added /EHsc flag to resolve C++ exception handling errors
+        cl.exe /EHsc /std:c++17 /D_HAS_STD_BYTE=0 /DNOMINMAX *.cpp /Fe:FantasyGame.exe /I. /I"C:\vcpkg\installed\x64-windows\include" /link /LIBPATH:"C:\vcpkg\installed\x64-windows\lib" allegro.lib allegro_main.lib allegro_image.lib allegro_audio.lib allegro_acodec.lib allegro_font.lib allegro_ttf.lib allegro_primitives.lib allegro_dialog.lib Winmm.lib
+        
+        # Create a clean deployment folder
+        mkdir dist -ErrorAction SilentlyContinue
+        
+        # Copy executable and compiled system binaries
+        copy FantasyGame.exe dist\
+        copy C:\vcpkg\installed\x64-windows\bin\*.dll dist\
+        
+        # =========================================================================
+        # CRITICAL FIX: Copy all required assets into the distribution folder
+        # =========================================================================
+        copy *.png dist\ -ErrorAction SilentlyContinue
+        copy *.wav dist\ -ErrorAction SilentlyContinue
+        copy *.ttf dist\ -ErrorAction SilentlyContinue
+        
+        # Compress everything together into the final game deployment archive
+        Compress-Archive -Path dist\* -DestinationPath FantasyGame-Windows-Build.zip -Force
+    
+    # --- 5. Upload to the Artifacts Tab ---
+    - name: Upload Windows Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FantasyGame-Artifact-ZIP
+        path: FantasyGame-Windows-Build.zip
 
-    - name: Zip and Bundle Assets
+    # --- 6. Configure AWS Credentials ---
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
+
+    # --- 7. Upload to S3 ---
+    - name: Upload to S3
       run: |
-        # Clean, fast Linux bash tools instead of PowerShell
-        mkdir dist
-        cp FantasyGame.exe dist/
-        cp *.png dist/ 2>/dev/null || true
-        cp *.wav dist/ 2>/dev/null || true
-        cp *.ttf dist/ 2>/dev/null || true
+        aws s3 cp FantasyGame-Windows-Build.zip s3://fantasy-game-bucket-928743224072-us-east-2-an/builds/FantasyGame-v1.0.${{ github.run_number }}.zip
+   
+    # --- 8. Upload to the Releases Tab ---
+    - name: Publish Direct Zip Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Build v1.0.${{ github.run_number }}
+        draft: false
+        prerelease: false
+        files: FantasyGame-Windows-Build.zip
+
+    # --- 9. Append CloudFront Link to Release Body ---
+    - name: Append CloudFront Link to Release
+      if: github.ref == 'refs/heads/main'
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: v1.0.${{ github.run_number }}
+        DOWNLOAD_URL: https://dcbc64a200c5t.cloudfront.net/FantasyGame-v1.0.${{ github.run_number }}.zip
+      run: |
+        # 1. Fetch current release notes and save to a file
+        gh release view "$env:RELEASE_TAG" --json body --jq .body | Out-File -FilePath current_notes.txt -Encoding utf8
         
-        zip -r FantasyGame-Windows-Build.zip dist/
+        # 2. Append the new link to the file
+        Add-Content -Path current_notes.txt -Value "`n`n---`n### 📥 Download via CloudFront (Global CDN)`n[Download Version $env:RELEASE_TAG here]($env:DOWNLOAD_URL)"
+        
+        # 3. Update the release using the correct flag (--notes-file)
+        gh release edit "$env:RELEASE_TAG" --notes-file current_notes.txt
+ 
